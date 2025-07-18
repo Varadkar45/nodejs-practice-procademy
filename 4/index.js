@@ -82,6 +82,7 @@ CREATING A SIMPLE WEB SERVER
 const readline = require('readline')
 const fs = require('fs')
 const http = require('http')
+const url = require('url')
 
 const html = fs.readFileSync('./Template/index.html', 'utf-8');
 let products = JSON.parse(fs.readFileSync('./Data/products.json', 'utf-8'))
@@ -89,17 +90,21 @@ let productListHtml = fs.readFileSync('./Template/product-list.html', 'utf-8');
 
 let productHtmlArray = products.map((prod) => {
     let output = productListHtml.replace('{{%IMAGE%}}', prod.productImage);
-    output = productListHtml.replace('{{%NAME%}}', prod.name);
-    output = productListHtml.replace('{{%MODELNAME%}}', prod.productImage);
-    output = productListHtml.replace('{{%MODELNO%}}', prod.modelNumber);
-    output = productListHtml.replace('{{%SIZE%}}', prod.size);
-    output = productListHtml.replace('{{%CAMERA%}}', prod.camera);
-    output = productListHtml.replace('{{%PRICE%}}', prod.price);
-    output = productListHtml.replace('{{%COLOR%}}', prod.color);
+    output = output.replace('{{%NAME%}}', prod.name);
+    output = output.replace('{{%MODELNAME%}}', prod.productImage);
+    output = output.replace('{{%MODELNO%}}', prod.modelNumber);
+    output = output.replace('{{%SIZE%}}', prod.size);
+    output = output.replace('{{%CAMERA%}}', prod.camera);
+    output = output.replace('{{%PRICE%}}', prod.price);
+    output = output.replace('{{%COLOR%}}', prod.color);
+
+    return output;
 })
 // STEP 1: CREATE A SERVER
 
 const server = http.createServer((request, response) => {
+    let x = url.parse(request.url, true)// if specified true then it will pass the query string from the url and viceversa for false and this expression will return us an object
+    console.log(x);
     let path = request.url;
 
     if(path ==='/' || path.toLocaleLowerCase()==='/home') {
@@ -123,11 +128,12 @@ const server = http.createServer((request, response) => {
         });
         response.end(html.replace('{{%CONTENT%}}','You are in contact page'));
     } else if(path.toLocaleLowerCase() === '/products')  {
-        response.writeHead(200, {'Content-Type' : 'application/json'}); //since we are sending json data therefore application/json
-        response.end("You are in products page");
-        console.log(productHtmlArray);
+        let productResponseHtml = html.replace('{{%CONTENT%}}', productHtmlArray.join(','));
+        response.writeHead(200, {'Content-Type' : 'text/html'}); //since we are sending json data therefore application/json
+        response.end(productResponseHtml);
+        // console.log(productHtmlArray.join(','));
         // fs.readFile('./Data/products.json', 'utf-8', (error, data) => {
-        //     response.end(data);
+        //     response.end(data);  
         // })
     }
         else {
@@ -135,7 +141,7 @@ const server = http.createServer((request, response) => {
             'Content-Type' : 'text/html',
             'my-header': 'Hellow, world'
         });
-        response.end(html.replace('{{%CONTENT%}}',"Error 404: Page not found"));
+        response.end(html.replace('{{%CONTENT%}}','Error 404: Page not found'));
     }
     // response.end(path);
     // console.log('A new request received');
@@ -145,3 +151,6 @@ const server = http.createServer((request, response) => {
 server.listen(8000,'127.0.0.1', ()=> {
     console.log('Server has started!');
 })
+
+
+
